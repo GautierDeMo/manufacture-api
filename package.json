@@ -1,0 +1,26 @@
+{
+  "name": "manufacture-api",
+  "version": "1.0.0",
+  "description": "CI/CD week with LiveCampus",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/GautierDeMo/manufacture-api.git"
+  },
+  "author": "GautierDeMo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GautierDeMo/manufacture-api/issues"
+  },
+  "homepage": "https://github.com/GautierDeMo/manufacture-api#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
+  }
+}
