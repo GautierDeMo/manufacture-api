@@ -9,9 +9,9 @@ on:
   # Sert quand le job doit être relancé
   workflow_dispatch:
     inputs:
-        environment:
-          type: choice
-          options: [staging, production]
+      environment:
+        type: choice
+        options: [staging, production]
 
 permissions:
   contents: read
