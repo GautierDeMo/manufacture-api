@@ -1,0 +1,33 @@
+# Node
+**/node_modules
+**/npm-debug.log*
+
+# Versioning
+.git
+.github
+.gitignore
+
+# Jest/Tests
+**/coverage
+
+# Env
+**/.env*
+!**/.env.example
+
+# Project
+README.md
+**/Dockerfile*
+**/*.log
+
+# Docker
+**/.dockerignore
+
+# MacOS
+**/.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# AI
+.claude

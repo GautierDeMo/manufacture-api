@@ -1,0 +1,37 @@
+services:
+    postgres:
+        image: postgres:16-alpine
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "psql -U ${DB_USER} -d ${DB_NAME} -c 'SELECT 1' || exit 1"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_NAME}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+    manufacture-api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: manufacture-api:improved
+        ports:
+            - "${PORT}:${PORT}"
+        depends_on:
+            postgres:
+                condition: service_healthy
+    manufacture-api-naif:
+        profiles:
+            - comparaison
+        build:
+            context: .
+            dockerfile: Dockerfile.naif
+        image: manufacture-api:naif
+        ports:
+            - "${PORT}"
+
+volumes:
+    postgres_data:
