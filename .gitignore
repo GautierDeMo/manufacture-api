@@ -1,3 +1,8 @@
-node_modules 
- .env 
- coverage
+# Node
+node_modules
+
+# Env
+.env
+
+# Jest/tests
+coverage
