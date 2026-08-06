@@ -6,12 +6,15 @@ on:
     branches: [main]
     tags: ["v*"]
     paths-ignore: ["**.md", ".env.example"]
-  # # Sert quand le job doit être relancé
-  # workflow_dispatch:
-  # inputs:
-  # environment:
-  # type: choice
-  # options: [staging, production]
+  # Sert quand le job doit être relancé à la demande
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement ciblé par le relancement"
+        type: choice
+        options: [staging, production]
+        default: staging
+        required: true
 
 permissions:
   contents: read
@@ -94,7 +97,7 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
       -
         id: v
-        run: echo "version=1.$(date +%s)" >> $GITHUB_OUTPUT
+        run: echo "version=1.$(date +%s)" >> "$GITHUB_OUTPUT"
     outputs:
       # Ce qui pourra servir lors du déploiement
       version: ${{ steps.v.outputs.version }}
