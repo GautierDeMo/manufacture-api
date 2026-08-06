@@ -1,6 +1,6 @@
 {
   "name": "manufacture-api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CI/CD week with LiveCampus",
   "main": "index.js",
   "scripts": {
@@ -30,5 +30,6 @@
   "allowScripts": {
     "fsevents@2.3.3": true,
     "unrs-resolver@1.12.2": true
-  }
+  },
+  "packageManager": "npm@11.17.0"
 }
