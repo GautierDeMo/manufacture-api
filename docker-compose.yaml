@@ -30,6 +30,8 @@ services:
             context: .
             dockerfile: Dockerfile.naif
         image: manufacture-api:naif
+        ports:
+            - "${PORT}"
 
 volumes:
     postgres_data:
