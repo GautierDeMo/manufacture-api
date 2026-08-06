@@ -10,3 +10,4 @@ EXPOSE ${PORT}
 RUN chown node:node /app
 USER node
 ENTRYPOINT ["node", "src/index.js"]
+LABEL org.opencontainers.image.source=https://github.com/GautierDeMo/manufacture-api
