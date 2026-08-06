@@ -6,12 +6,12 @@ on:
     branches: [main]
     tags: ["v*"]
     paths-ignore: ["**.md", ".env.example"]
-  # Sert quand le job doit être relancé
-  workflow_dispatch:
-    inputs:
-      environment:
-        type: choice
-        options: [staging, production]
+  # # Sert quand le job doit être relancé
+  # workflow_dispatch:
+  # inputs:
+  # environment:
+  # type: choice
+  # options: [staging, production]
 
 permissions:
   contents: read
