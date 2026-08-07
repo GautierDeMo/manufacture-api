@@ -59,6 +59,10 @@ jobs:
         name: Checkout
         uses: actions/checkout@v7
       -
+        name: Selected env.
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "Environment = ${{ github.event.inputs.environment }}"
+      -
         name: Login to GHCR
         uses: docker/login-action@v4
         with:
