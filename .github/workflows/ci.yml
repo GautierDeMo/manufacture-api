@@ -89,7 +89,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
       -
         name: Scan with Trivy (table, artifact)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: scan-target:${{ github.sha }}
           format: table
@@ -99,7 +99,7 @@ jobs:
           exit-code: "0"
       -
         name: Scan with Trivy (sarif Code Scanning)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: scan-target:${{ github.sha }}
           output: trivy-results-${{ matrix.arch }}.sarif
