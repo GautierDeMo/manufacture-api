@@ -133,7 +133,7 @@ jobs:
       -
         name: Selected env.
         if: github.event_name == 'workflow_dispatch'
-        run: echo "Environment = ${{ github.event.inputs.environment }}"
+        run: echo "Environment = ${{ inputs.environment }}"
       -
         name: Login to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
@@ -149,7 +149,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=sha,prefix=sha-
-            type=raw,value=staging,enable={{is_default_branch}}
+            type=raw,value=${{ startsWith(github.ref, 'refs/tags/v') && (inputs.environment || 'production') || 'staging' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
