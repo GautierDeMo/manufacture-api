@@ -46,7 +46,27 @@ updates:
       timezone: Europe/Paris
       time: "16:00"
     groups:
-      all-images:
+      all-docker-images:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "docker-compose"
+    open-pull-requests-limit: 5
+    directory: "/"
+    labels:
+      - dependencies
+      - docker-compose
+      - security
+    commit-message:
+      prefix: "⬆️ build"
+      include: scope
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      timezone: Europe/Paris
+      time: "16:00"
+    groups:
+      all-docker-compose-images:
         patterns:
           - "*"
 
