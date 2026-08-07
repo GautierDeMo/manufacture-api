@@ -52,7 +52,9 @@ jobs:
       security-events: write
 
     needs: tests_node_v
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    # ⚠️ TEMPORAIRE — restriction levée pour valider le job sur une branche.
+    # À restaurer une fois le scan vérifié :
+    # if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: true
       matrix:
