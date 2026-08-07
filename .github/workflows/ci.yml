@@ -20,8 +20,7 @@ permissions:
   contents: read
 
 jobs:
-
-  test:
+  tests_node_v:
     strategy:
       fail-fast: false
       matrix:
@@ -47,8 +46,45 @@ jobs:
           name: rapport-node-${{ matrix.node }}
           path: coverage/
 
-  build:
-    needs: test
+  scan_image:
+    needs: tests_node_v
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Set up QEMU for multi-arch building
+        uses: docker/setup-qemu-action@v4
+        if: matrix.platform == 'linux/arm64'
+      -
+        name: Set up docker container driver for the docker builder
+        uses: docker/setup-buildx-action@v4.2.0
+      -
+        name: Build ${{ matrix.platform }} image locally for scanning
+        uses: docker/build-push-action@v7.3.0
+        with:
+          load: true
+          push: false
+          tags: scan-target:${{ github.sha }}
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+      -
+        name: Scan with Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: scan-target:${{ github.sha }}
+          severity: CRITICAL
+          exit-code: "1"
+
+  build_cd:
+    needs: scan_image
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -81,7 +117,6 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-
       -
         name: Set up QEMU for multi-arch building
         uses: docker/setup-qemu-action@v4
@@ -89,30 +124,16 @@ jobs:
         name: Set up docker container driver for the docker builder
         uses: docker/setup-buildx-action@v4.2.0
       -
-        name: Build amd64 image locally for scanning
-        uses: docker/build-push-action@v7.3.0
-        with:
-          load: true
-          push: false
-          tags: scan-target:${{ github.sha }}
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      -
-        name: Scan with Trivy
-        uses: aquasecurity/trivy-action@0.36.0
-        with:
-          image-ref: scan-target:${{ github.sha }}
-          severity: CRITICAL
-          exit-code: "1"
-      -
         name: Build and push images
         uses: docker/build-push-action@v7.3.0
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # relit les deux caches produits par scan_image, un par plateforme
+          cache-from: |
+            type=gha,scope=linux/amd64
+            type=gha,scope=linux/arm64
+          cache-to: type=gha,mode=max,scope=build
           platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
