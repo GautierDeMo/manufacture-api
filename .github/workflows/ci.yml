@@ -6,7 +6,7 @@ on:
     branches: [main]
     tags: ["v*"]
     paths-ignore: ["**.md", ".env.example"]
-  # Sert quand le job doit être relancé à la demande
+  # Useful when the job needs to be launch manually
   workflow_dispatch:
     inputs:
       environment:
