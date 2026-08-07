@@ -89,6 +89,27 @@ jobs:
         name: Set up docker container driver for the docker builder
         uses: docker/setup-buildx-action@v4.2.0
       -
+        # load: true charge l'image dans le démon local : incompatible avec le
+        # multi-plateforme, d'où le build amd64 seul, uniquement pour le scan.
+        name: Build amd64 image locally for scanning
+        uses: docker/build-push-action@v7.3.0
+        with:
+          load: true
+          push: false
+          tags: scan-target:${{ github.sha }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      -
+        name: Scan with Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: scan-target:${{ github.sha }}
+          severity: CRITICAL
+          exit-code: "1"
+      -
+        # Le cache gha rend ce second build quasi gratuit pour amd64 ;
+        # seul arm64 est réellement construit ici.
         name: Build and push images
         uses: docker/build-push-action@v7.3.0
         with:
