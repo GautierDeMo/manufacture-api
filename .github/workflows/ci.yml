@@ -165,10 +165,12 @@ jobs:
       -
         name: Build and push images
         uses: docker/build-push-action@v7.3.0
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          # relit les deux caches produits par scan_image, un par plateforme
           cache-from: |
             type=gha,scope=linux/amd64
             type=gha,scope=linux/arm64
@@ -180,7 +182,7 @@ jobs:
         id: v
         run: echo "version=1.$(date +%s)" >> "$GITHUB_OUTPUT"
     outputs:
-      # Ce qui pourra servir lors du déploiement
+      # What can be used for the deployment, and not the delivery
       version: ${{ steps.v.outputs.version }}
 
 concurrency:
