@@ -28,7 +28,7 @@ services:
             - comparaison
         build:
             context: .
-            dockerfile: Dockerfile.naif
+            dockerfile: naif/Dockerfile.naif
         image: manufacture-api:naif
         ports:
             - "${PORT}"
