@@ -1,17 +1,17 @@
-FROM node:24.19.0-alpine3.24 AS deps
+FROM node:24.19.0-alpine3.24@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43 AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Not mandatory because the CI pipeline/workflow runs tests already, but it's possible
-# FROM node:24.19.0-alpine3.24 AS test
+# FROM node:24.19.0-alpine3.24@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43 AS test
 # WORKDIR /app
 # COPY package*.json ./
 # RUN npm ci
 # COPY . .
 # RUN npm run test
 
-FROM node:24.19.0-alpine3.24 AS runtime
+FROM node:24.19.0-alpine3.24@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43 AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
