@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Environnement ciblé par le relancement"
+        description: "Environnement ciblé par le relaunch"
         type: choice
         options: [staging, production]
         default: staging
