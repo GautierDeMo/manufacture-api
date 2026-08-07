@@ -1,51 +1,190 @@
-name: CI
+name: CI/CD/CD
+
 on:
   pull_request:
   push:
     branches: [main]
+    tags: ["v*"]
+    paths-ignore: ["**.md", ".env.example"]
+  # Useful when the job needs to be launch manually
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement ciblé par le relaunch"
+        type: choice
+        options: [staging, production]
+        default: staging
+        required: true
 
 permissions:
   contents: read
 
 jobs:
-  qualite:
+  tests_node_v:
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22, 24]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
-      - run: npm ci
-      - run: npm test
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Set up Node.js environment
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      -
+        run: npm ci && npm run test
+      -
+        name: Upload the coverage report for Node v.${{ matrix.node }} artifact
+        uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: rapport-node-${{ matrix.node }}
+          path: coverage/
 
-  image:
-    needs: qualite
-    if: github.ref == 'refs/heads/main'
+  scan_image:
+    permissions:
+      contents: read
+      security-events: write
+
+    needs: tests_node_v
+    # ⚠️ TEMPORAIRE — restriction levée pour valider le job sur une branche.
+    # À restaurer une fois le scan vérifié :
+    # if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        -
+          platform: linux/amd64
+          arch: amd64
+        -
+          platform: linux/arm64
+          arch: arm64
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Set up QEMU for multi-arch building
+        uses: docker/setup-qemu-action@v4
+        if: matrix.platform == 'linux/arm64'
+      -
+        name: Set up docker container driver for the docker builder
+        uses: docker/setup-buildx-action@v4.2.0
+      -
+        name: Build ${{ matrix.platform }} image locally for scanning
+        uses: docker/build-push-action@v7.3.0
+        with:
+          load: true
+          push: false
+          tags: scan-target:${{ github.sha }}
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+      -
+        name: Scan with Trivy (table, artifact)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: scan-target:${{ github.sha }}
+          format: table
+          output: trivy-results-${{ matrix.arch }}.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+      -
+        name: Scan with Trivy (sarif Code Scanning)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: scan-target:${{ github.sha }}
+          output: trivy-results-${{ matrix.arch }}.sarif
+          format: sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      -
+        name: Upload the scan_image artifact
+        uses: actions/upload-artifact@v7.0.1
+        if: always() && hashFiles(format('trivy-results-{0}.txt', matrix.arch)) != ''
+        with:
+          name: trivy-results-${{ matrix.arch }}
+          path: trivy-results-${{ matrix.arch }}.txt
+      -
+        name: Upload the scan results to Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles(format('trivy-results-{0}.sarif', matrix.arch)) != ''
+        with:
+          sarif_file: trivy-results-${{ matrix.arch }}.sarif
+          category: trivy-results-${{ matrix.arch }}
+
+  build_cd:
+    needs: scan_image
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Selected env.
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "Environment = ${{ github.event.inputs.environment }}"
+      -
+        name: Login to GHCR
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/metadata-action@v5
+      -
+        name: Manage tags and labels
+        uses: docker/metadata-action@v6
         id: meta
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=sha,prefix=sha-
-            type=raw,value=staging
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+            type=raw,value=staging,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      -
+        name: Set up QEMU for multi-arch building
+        uses: docker/setup-qemu-action@v4
+      -
+        name: Set up docker container driver for the docker builder
+        uses: docker/setup-buildx-action@v4.2.0
+      -
+        name: Build and push images
+        uses: docker/build-push-action@v7.3.0
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=linux/amd64
+            type=gha,scope=linux/arm64
+          cache-to: type=gha,mode=max,scope=build
           platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
+      -
+        id: v
+        run: echo "version=1.$(date +%s)" >> "$GITHUB_OUTPUT"
+    outputs:
+      # What can be used for the deployment, and not the delivery
+      version: ${{ steps.v.outputs.version }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true

@@ -7,15 +7,64 @@ version: 2
 updates:
   - package-ecosystem: "npm" # See documentation for possible values
     directory: "/" # Location of package manifests
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - npm
+      - security
+    commit-message:
+      prefix: "⬆️ build"
+      include: scope
     schedule:
       interval: "weekly"
+      day: "sunday"
+      timezone: Europe/Paris
+      time: "16:00"
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "docker"
+    open-pull-requests-limit: 5
+    directory: "/"
+    ignore:
+      -
+        dependency-name: "node"
+        update-types:
+          - "version-update:semver-major"
+    labels:
+      - dependencies
+      - docker
+      - security
+    commit-message:
+      prefix: "⬆️ build"
+      include: scope
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      timezone: Europe/Paris
+      time: "16:00"
+    groups:
+      all-images:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    open-pull-requests-limit: 5
+    directory: "/"
+    labels:
+      - dependencies
+      - github_actions
+      - security
+    commit-message:
+      prefix: "⬆️ build"
+      include: scope
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      timezone: Europe/Paris
+      time: "16:00"
+    groups:
+      all-actions:
+        patterns: [ "*" ]

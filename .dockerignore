@@ -9,6 +9,8 @@
 
 # Jest/Tests
 **/coverage
+**/jest.config.js
+**/tests
 
 # Env
 **/.env*
@@ -21,6 +23,7 @@ README.md
 
 # Docker
 **/.dockerignore
+**/docker-compose.yaml
 
 # MacOS
 **/.DS_Store

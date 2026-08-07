@@ -1,13 +1,26 @@
-FROM node:26.5.1-alpine3.23
+FROM node:24.19.0-alpine3.23 AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --omit=dev
+
+# Not mandatory because the CI pipeline/workflow runs tests already, but it's possible
+# FROM node:24.19.0-alpine3.23 AS test
+# WORKDIR /app
+# COPY package*.json ./
+# RUN npm ci
+# COPY . .
+# RUN npm run test
+
+FROM node:24.19.0-alpine3.23 AS runtime
+WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn* /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
+COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node . .
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --start-interval=1s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:$PORT/health || exit 1
-EXPOSE ${PORT}
 RUN chown node:node /app
 USER node
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --start-interval=1s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:$PORT/health || exit 1
+EXPOSE ${PORT}
 ENTRYPOINT ["node", "src/index.js"]
 LABEL org.opencontainers.image.source=https://github.com/GautierDeMo/manufacture-api
