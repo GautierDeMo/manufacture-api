@@ -28,6 +28,11 @@ updates:
   - package-ecosystem: "docker"
     open-pull-requests-limit: 5
     directory: "/"
+    ignore:
+      -
+        dependency-name: "node"
+        update-types:
+          - "version-update:semver-major"
     labels:
       - dependencies
       - docker
