@@ -47,12 +47,22 @@ jobs:
           path: coverage/
 
   scan_image:
+    permissions:
+      contents: read
+      security-events: write
+
     needs: tests_node_v
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: true
       matrix:
-        platform: [linux/amd64, linux/arm64]
+        include:
+        -
+          platform: linux/amd64
+          arch: amd64
+        -
+          platform: linux/arm64
+          arch: arm64
     runs-on: ubuntu-latest
     steps:
       -
@@ -76,12 +86,39 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
       -
-        name: Scan with Trivy
+        name: Scan with Trivy (table, artifact)
         uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: scan-target:${{ github.sha }}
-          severity: CRITICAL
+          format: table
+          output: trivy-results-${{ matrix.arch }}.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+      -
+        name: Scan with Trivy (sarif Code Scanning)
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: scan-target:${{ github.sha }}
+          output: trivy-results-${{ matrix.arch }}.sarif
+          format: sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: "1"
+      -
+        name: Upload the scan_image artifact
+        uses: actions/upload-artifact@v7.0.1
+        if: always() && hashFiles(format('trivy-results-{0}.txt', matrix.arch)) != ''
+        with:
+          name: trivy-results-${{ matrix.arch }}
+          path: trivy-results-${{ matrix.arch }}.txt
+      -
+        name: Upload the scan results to Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles(format('trivy-results-{0}.sarif', matrix.arch)) != ''
+        with:
+          sarif_file: trivy-results-${{ matrix.arch }}.sarif
+          category: trivy-results-${{ matrix.arch }}
 
   build_cd:
     needs: scan_image
