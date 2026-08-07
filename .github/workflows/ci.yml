@@ -39,7 +39,7 @@ jobs:
       -
         run: npm ci && npm run test
       -
-        name: Upload a build artifact
+        name: Upload the coverage report for Node v.${{ matrix.node }} artifact
         uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
