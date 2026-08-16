@@ -113,7 +113,7 @@ jobs:
           path: trivy-results-${{ matrix.arch }}.txt
       -
         name: Upload the scan results to Code Scanning
-        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
         if: always() && hashFiles(format('trivy-results-{0}.sarif', matrix.arch)) != ''
         with:
           sarif_file: trivy-results-${{ matrix.arch }}.sarif
